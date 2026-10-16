@@ -1,0 +1,92 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Screenshot Gallery</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0f0f13; color: #e8e8ec; font-family: 'Segoe UI', system-ui, sans-serif; }
+header { position: sticky; top: 0; z-index: 10; background: rgba(15,15,19,.92); backdrop-filter: blur(10px); padding: 14px 24px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #23232b; }
+header h1 { font-size: 18px; font-weight: 600; }
+header .count { color: #8a8a96; font-size: 14px; }
+header input { margin-left: auto; background: #1a1a21; border: 1px solid #2c2c36; color: #e8e8ec; padding: 8px 14px; border-radius: 8px; width: 260px; font-size: 14px; outline: none; }
+header input:focus { border-color: #5b8cff; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; padding: 20px 24px; }
+.card { position: relative; background: #17171d; border: 1px solid #26262f; border-radius: 10px; overflow: hidden; cursor: pointer; transition: transform .15s, border-color .15s; }
+.card:hover { transform: translateY(-3px); border-color: #5b8cff; }
+.card img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; background: #0a0a0e; }
+.card .label { padding: 8px 10px; font-size: 12px; color: #9a9aa6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card .idx { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,.65); padding: 2px 8px; border-radius: 6px; font-size: 11px; }
+.empty { text-align: center; color: #8a8a96; padding: 60px 20px; font-size: 15px; }
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.93); z-index: 100; display: none; align-items: center; justify-content: center; flex-direction: column; }
+.lightbox.open { display: flex; }
+.lightbox img { max-width: 92vw; max-height: 84vh; object-fit: contain; border-radius: 6px; }
+.lightbox .meta { margin-top: 12px; color: #b0b0bc; font-size: 14px; }
+.lightbox .nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,.08); border: none; color: #fff; font-size: 28px; width: 52px; height: 52px; border-radius: 50%; cursor: pointer; }
+.lightbox .nav:hover { background: rgba(255,255,255,.18); }
+.lightbox .prev { left: 20px; } .lightbox .next { right: 20px; }
+.lightbox .close { position: absolute; top: 18px; right: 24px; background: none; border: none; color: #fff; font-size: 30px; cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Screenshot Gallery</h1>
+  <span class="count"></span>
+  <input type="text" id="search" placeholder="Filter by name...">
+</header>
+<div class="grid" id="grid"></div>
+<div class="empty" id="empty" style="display:none">No screenshots match your filter.</div>
+<div class="lightbox" id="lightbox">
+  <button class="close" id="closeBtn">&times;</button>
+  <button class="nav prev" id="prevBtn">&#8249;</button>
+  <img id="lbImg" alt="">
+  <div class="meta" id="lbMeta"></div>
+  <button class="nav next" id="nextBtn">&#8250;</button>
+</div>
+<script>
+const FILES = ["Screenshot_20261016-181340.png","Screenshot_20261016-181343.png","Screenshot_20261016-181614.png","Screenshot_20261016-181617.png","Screenshot_20261016-181620.png","Screenshot_20261016-181623.png","Screenshot_20261016-181626.png","Screenshot_20261016-181804.png","Screenshot_20261016-181808.png","Screenshot_20261016-181943.png","Screenshot_20261016-181946.png","Screenshot_20261016-181948.png","Screenshot_20261016-182000.png","Screenshot_20261016-182002.png","Screenshot_20261016-182030.png","Screenshot_20261016-182142.png","Screenshot_20261016-182208.png","Screenshot_20261016-182216.png","Screenshot_20261016-182220.png","Screenshot_20261016-182223.png","Screenshot_20261016-182234.png","Screenshot_20261016-182237.png","Screenshot_20261016-182240.png","Screenshot_20261016-182244.png","Screenshot_20261016-182248.png","Screenshot_20261016-182251.png","Screenshot_20261016-182255.png","Screenshot_20261016-182300.png","Screenshot_20261016-182314.png","Screenshot_20261016-182318.png","Screenshot_20261016-182322.png","Screenshot_20261016-182333.png","Screenshot_20261016-182336.png","Screenshot_20261016-182339.png","Screenshot_20261016-182342.png","Screenshot_20261016-182431.png","Screenshot_20261016-183001.png","Screenshot_20261016-183024.png","Screenshot_20261016-183303.png","Screenshot_20261016-183408.png","Screenshot_20261016-183422.png","Screenshot_20261016-183504.png","Screenshot_20261016-183852.png","Screenshot_20261016-183856.png","Screenshot_20261016-184010.png","Screenshot_20261016-184153.png","Screenshot_20261016-184321.png","Screenshot_20261016-184509.png","Screenshot_20261016-184542.png","Screenshot_20261016-184641.png","Screenshot_20261016-185343.png","Screenshot_20261016-185653.png","Screenshot_20261016-190358.png","Screenshot_20261016-190402.png","Screenshot_20261016-190405.png","Screenshot_20261016-190407.png","Screenshot_20261016-190410.png","Screenshot_20261016-190412.png","Screenshot_20261016-190415.png","Screenshot_20261016-190418.png","Screenshot_20261016-190421.png","Screenshot_20261016-190426.png","Screenshot_20261016-190428.png","Screenshot_20261016-190431.png","Screenshot_20261016-190434.png","Screenshot_20261016-190439.png","Screenshot_20261016-190441.png","Screenshot_20261016-190445.png","Screenshot_20261016-190519.png","Screenshot_20261016-190523.png","Screenshot_20261016-190527.png","Screenshot_20261016-190529.png","Screenshot_20261016-190531.png","Screenshot_20261016-190538.png","Screenshot_20261016-190545.png","Screenshot_20261016-190548.png","Screenshot_20261016-190550.png","Screenshot_20261016-190619.png","Screenshot_20261016-190621.png","Screenshot_20261016-190623.png","Screenshot_20261016-190626.png","Screenshot_20261016-190628.png","Screenshot_20261016-190635.png","Screenshot_20261016-190638.png","Screenshot_20261016-190644.png","Screenshot_20261016-190646.png","Screenshot_20261016-190649.png","Screenshot_20261016-190656.png","Screenshot_20261016-190658.png","Screenshot_20261016-190701.png","Screenshot_20261016-190703.png","Screenshot_20261016-190713.png","Screenshot_20261016-190716.png","Screenshot_20261016-190723.png","Screenshot_20261016-190725.png","Screenshot_20261016-190727.png","Screenshot_20261016-190737.png","Screenshot_20261016-190748.png","Screenshot_20261016-190757.png","Screenshot_20261016-190817.png","Screenshot_20261016-190820.png","Screenshot_20261016-190823.png","Screenshot_20261016-190833.png","Screenshot_20261016-190836.png","Screenshot_20261016-190840.png","Screenshot_20261016-191154.png","Screenshot_20261016-191406.png","Screenshot_20261016-191432.png","Screenshot_20261016-191435.png","Screenshot_20261016-191448.png","Screenshot_20261016-191500.png","Screenshot_20261016-191531.png","Screenshot_20261016-191539.png","Screenshot_20261016-191546.png","Screenshot_20261016-191554.png","Screenshot_20261016-191605.png","Screenshot_20261016-191616.png","Screenshot_20261016-191619.png","Screenshot_20261016-191621.png","Screenshot_20261016-191627.png","Screenshot_20261016-191629.png","Screenshot_20261016-191633.png","Screenshot_20261016-191635.png"];
+const grid = document.getElementById('grid');
+const empty = document.getElementById('empty');
+const lb = document.getElementById('lightbox');
+const lbImg = document.getElementById('lbImg');
+const lbMeta = document.getElementById('lbMeta');
+let current = 0, filtered = FILES;
+
+function render() {
+  grid.innerHTML = '';
+  filtered.forEach((f, i) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<span class="idx">${i + 1}</span><img loading="lazy" src="${f}" alt=""><div class="label">${f.replace('Screenshot_','').replace('.png','').replace(/-/g,':')}</div>`;
+    card.onclick = () => openLB(i);
+    grid.appendChild(card);
+  });
+  empty.style.display = filtered.length ? 'none' : 'block';
+  document.querySelector('.count').textContent = filtered.length + ' / ' + FILES.length + ' screenshots';
+}
+function openLB(i) { current = i; updateLB(); lb.classList.add('open'); document.body.style.overflow = 'hidden'; }
+function closeLB() { lb.classList.remove('open'); document.body.style.overflow = ''; }
+function updateLB() {
+  lbImg.src = filtered[current];
+  lbMeta.textContent = (current + 1) + ' / ' + filtered.length + ' — ' + filtered[current];
+}
+document.getElementById('closeBtn').onclick = closeLB;
+document.getElementById('prevBtn').onclick = e => { e.stopPropagation(); current = (current - 1 + filtered.length) % filtered.length; updateLB(); };
+document.getElementById('nextBtn').onclick = e => { e.stopPropagation(); current = (current + 1) % filtered.length; updateLB(); };
+lb.onclick = e => { if (e.target === lb) closeLB(); };
+document.addEventListener('keydown', e => {
+  if (!lb.classList.contains('open')) return;
+  if (e.key === 'Escape') closeLB();
+  if (e.key === 'ArrowLeft') document.getElementById('prevBtn').click();
+  if (e.key === 'ArrowRight') document.getElementById('nextBtn').click();
+});
+document.getElementById('search').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  filtered = FILES.filter(f => f.toLowerCase().includes(q));
+  render();
+});
+render();
+</script>
+</body>
+</html>
